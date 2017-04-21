@@ -131,10 +131,9 @@ OUTPUT_NAME := $(subst $(SPACE),,$(APP_TITLE))
 OUTPUT_FILE := $(TOPDIR)/$(OUTPUT_NAME)
 
 APP_ICON := $(TOPDIR)/$(ICON)
-APP_ROMFS := $(TOPDIR)/$(ROMFS)
 
 RSF := $(TOPDIR)/tools/template.rsf
-COMMON_MAKEROM_PARAMS := -rsf $(RSF) -target t -exefslogo -elf $(OUTPUT_FILE).elf -icon icon.icn -banner banner.bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(APP_UNIQUE_ID)" -DAPP_ROMFS="$(APP_ROMFS)" -DAPP_SYSTEM_MODE="64MB" -DAPP_SYSTEM_MODE_EXT="Legacy"
+COMMON_MAKEROM_PARAMS := -rsf $(RSF) -target t -exefslogo -elf $(OUTPUT_FILE).elf -icon icon.icn -banner banner.bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(APP_UNIQUE_ID)" -DAPP_SYSTEM_MODE="64MB" -DAPP_SYSTEM_MODE_EXT="Legacy"
 
 ifeq ($(OS),Windows_NT)
 	MAKEROM = $(TOPDIR)/tools/makerom.exe
@@ -152,9 +151,6 @@ else
 endif
 
 _3DSXFLAGS += --smdh=$(OUTPUT_FILE).smdh
-ifneq ("$(wildcard $(TOPDIR)/$(ROMFS))","")
-	_3DSXFLAGS += --romfs=$(TOPDIR)/$(ROMFS)
-endif
 
 #---------------------------------------------------------------------------------
 # Main Targets

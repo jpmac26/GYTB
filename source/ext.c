@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <3ds.h>
+#include <3ds/services/fs.h>
 
 u8 null_smdh[0x36C0] = {0};
 
@@ -16,7 +17,7 @@ Result CreateExtSaveData(u32 extdataID)
 	u32 file_limit = 1000;
 	
 	cmdbuf[0] = 0x08300182;
-	cmdbuf[1] = mediatype_SDMC;
+	cmdbuf[1] = MEDIATYPE_SD;
 	cmdbuf[2] = extdataID;
 	cmdbuf[3] = 0;
 	cmdbuf[4] = 0x36C0;
@@ -39,7 +40,7 @@ Result DeleteExtSaveData(u32 extdataID)
 	u32* cmdbuf = getThreadCommandBuffer();
 	
 	cmdbuf[0] = 0x08350080;
-	cmdbuf[1] = mediatype_SDMC;
+	cmdbuf[1] = MEDIATYPE_SD;
 	cmdbuf[2] = extdataID;
 
 	Result ret = 0;

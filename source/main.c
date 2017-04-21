@@ -141,11 +141,11 @@ int rgb565ToPng(char* filename, u16* rgb_buf, u8* alpha_buf) {
 
 int setupExtdata() {
 
-	u32 extdata_archive_lowpathdata[3] = {mediatype_SDMC, 0x000014d1, 0};
-	FS_archive extdata_archive = (FS_archive){ARCH_EXTDATA, (FS_path){PATH_BINARY, 0xC, (u8*)extdata_archive_lowpathdata}};
+	u32 extdata_archive_lowpathdata[3] = {MEDIATYPE_SD, 0x000014d1, 0};
+	FS_Archive extdata_archive;
 	
-	Result ret = FSUSER_OpenArchive(NULL, &extdata_archive);
-	FSUSER_CloseArchive(NULL, &extdata_archive);
+	Result ret = FSUSER_OpenArchive(&extdata_archive, ARCHIVE_EXTDATA, (FS_Path){PATH_BINARY, 0xC, (u8*)extdata_archive_lowpathdata});
+	FSUSER_CloseArchive(extdata_archive);
 	
 	if (ret==0) {
 		print2("Extdata exists.\n");
@@ -200,10 +200,10 @@ void removeInvalidChars(char *str){
 
 int dumpPrexistingBadges() {
 
-	u32 extdata_archive_lowpathdata[3] = {mediatype_SDMC, 0x000014d1, 0};
-	FS_archive extdata_archive = (FS_archive){ARCH_EXTDATA, (FS_path){PATH_BINARY, 0xC, (u8*)extdata_archive_lowpathdata}};
-	FS_path badgeDataPath = FS_makePath(PATH_CHAR, "/BadgeData.dat");
-	FS_path badgeMngPath = FS_makePath(PATH_CHAR, "/BadgeMngFile.dat");
+	u32 extdata_archive_lowpathdata[3] = {MEDIATYPE_SD, 0x000014d1, 0};
+	FS_Archive extdata_archive;
+	FS_Path badgeDataPath = fsMakePath(PATH_ASCII, "/BadgeData.dat");
+	FS_Path badgeMngPath = fsMakePath(PATH_ASCII, "/BadgeMngFile.dat");
 	
 	int ret = 0;
 	u32 bytesRead;
@@ -223,10 +223,10 @@ int dumpPrexistingBadges() {
 	memset(badgeMngBuffer, 0, badgeMngSize);
 	
 	
-	ret = FSUSER_OpenArchive(NULL, &extdata_archive);
+	ret = FSUSER_OpenArchive(&extdata_archive, ARCHIVE_EXTDATA, (FS_Path){PATH_BINARY, 0xC, (u8*)extdata_archive_lowpathdata});
 	if (ret) goto end;
 	
-	ret = FSUSER_OpenFile(NULL, &filehandle, extdata_archive, badgeDataPath, FS_OPEN_READ, 0);
+	ret = FSUSER_OpenFile(&filehandle, extdata_archive, badgeDataPath, FS_OPEN_READ, 0);
 	if (ret) goto end;
 	ret = FSFILE_Read(filehandle, &bytesRead, 0, badgeDataBuffer, badgeDataSize);
 	if (ret) goto end;
@@ -234,7 +234,7 @@ int dumpPrexistingBadges() {
 	
 	if (bytesRead != badgeDataSize) {ret = -4; goto end;}
 	
-	ret = FSUSER_OpenFile(NULL, &filehandle, extdata_archive, badgeMngPath, FS_OPEN_READ, 0);
+	ret = FSUSER_OpenFile(&filehandle, extdata_archive, badgeMngPath, FS_OPEN_READ, 0);
 	if (ret) goto end;
 	ret = FSFILE_Read(filehandle, &bytesRead, 0, badgeMngBuffer, badgeMngSize);
 	if (ret) goto end;
@@ -283,7 +283,7 @@ int dumpPrexistingBadges() {
 	}
 	
 	end:
-	FSUSER_CloseArchive(NULL, &extdata_archive);
+	FSUSER_CloseArchive(extdata_archive);
 	if (badgeDataBuffer) free(badgeDataBuffer);
 	if (badgeMngBuffer) free(badgeMngBuffer);
 	return ret;
@@ -291,8 +291,8 @@ int dumpPrexistingBadges() {
 
 int writeToExtdata(int nnidNum) {
 	
-	u32 extdata_archive_lowpathdata[3] = {mediatype_SDMC, 0x000014d1, 0};
-	FS_archive extdata_archive = (FS_archive){ARCH_EXTDATA, (FS_path){PATH_BINARY, 0xC, (u8*)extdata_archive_lowpathdata}};
+	u32 extdata_archive_lowpathdata[3] = {MEDIATYPE_SD, 0x000014d1, 0};
+	FS_Archive extdata_archive;
 	Handle filehandle;
 	u32 tmpval=0;
 	u64 badgeDataSize = 0xF4DF80;
@@ -392,13 +392,13 @@ int writeToExtdata(int nnidNum) {
 	
 	print2("Attempting to write extdata...\n");
 	
-	ret = FSUSER_OpenArchive(NULL, &extdata_archive);
+	ret = FSUSER_OpenArchive(&extdata_archive, ARCHIVE_EXTDATA, (FS_Path){PATH_BINARY, 0xC, (u8*)extdata_archive_lowpathdata});
 	if (ret != 0) {print2("FSUSER_OpenArchive failed! %08x\n", ret); goto end;}
 
-	FS_path path = FS_makePath(PATH_CHAR, "/BadgeData.dat");
+	FS_Path path = fsMakePath(PATH_ASCII, "/BadgeData.dat");
 	
-	ret = FSUSER_CreateFile(NULL, extdata_archive, path, badgeDataSize);
-	ret = FSUSER_OpenFile(NULL, &filehandle, extdata_archive, path, FS_OPEN_WRITE, 0);
+	ret = FSUSER_CreateFile(extdata_archive, path, 0, badgeDataSize);
+	ret = FSUSER_OpenFile(&filehandle, extdata_archive, path, FS_OPEN_WRITE, 0);
 	if (ret != 0) {print2("FSUSER_OpenFile failed! %08x\n", ret); goto end;}
 	ret = FSFILE_Write(filehandle, &tmpval, 0, badgeDataBuffer, badgeDataSize, FS_WRITE_FLUSH);
 	ret = FSFILE_Close(filehandle);
@@ -434,24 +434,24 @@ int writeToExtdata(int nnidNum) {
 	memcpy(badgeMngBuffer + 0xA028 + 0x1C, &badge_count, 4);
 	memcpy(badgeMngBuffer + 0xA028 + 0x20, &total_badges, 4);
 
-	path = FS_makePath(PATH_CHAR, "/BadgeMngFile.dat");
-	FSUSER_CreateFile(NULL, extdata_archive, path, badgeMngSize);
+	path = fsMakePath(PATH_ASCII, "/BadgeMngFile.dat");
+	FSUSER_CreateFile(extdata_archive, path, 0, badgeMngSize);
 	
 	//if badge layout data already exists, copy it.
-	ret = FSUSER_OpenFile(NULL, &filehandle, extdata_archive, path, FS_OPEN_READ, 0);
+	ret = FSUSER_OpenFile(&filehandle, extdata_archive, path, FS_OPEN_READ, 0);
 	if (ret==0) {
 		FSFILE_Read(filehandle, &tmpval, 0xB2E8, badgeMngBuffer+0xB2E8, 360 * 0x18);
 		FSFILE_Close(filehandle);
 	}
 	
 	
-	ret = FSUSER_OpenFile(NULL, &filehandle, extdata_archive, path, FS_OPEN_WRITE, 0);
+	ret = FSUSER_OpenFile(&filehandle, extdata_archive, path, FS_OPEN_WRITE, 0);
 	if (ret != 0) {print2("FSUSER_OpenFile failed! %08x\n", ret); goto end;}
 	ret = FSFILE_Write(filehandle, &tmpval, 0, badgeMngBuffer, badgeMngSize, FS_WRITE_FLUSH);
 	ret = FSFILE_Close(filehandle);
 	
 	end:
-	FSUSER_CloseArchive(NULL, &extdata_archive);
+	FSUSER_CloseArchive(extdata_archive);
 	if (rgb_buf_64x64) free(rgb_buf_64x64);
 	if (alpha_buf_64x64) free(alpha_buf_64x64);
 	if (rgb_buf_32x32) free(rgb_buf_32x32);
